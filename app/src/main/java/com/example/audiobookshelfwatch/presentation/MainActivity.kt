@@ -1,72 +1,75 @@
-/* While this template provides a good starting point for using Wear Compose, you can always
- * take a look at https://github.com/android/wear-os-samples/tree/main/ComposeStarter to find the
- * most up to date changes to the libraries and their usages.
- */
-
 package com.example.audiobookshelfwatch.presentation
 
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.wear.compose.material.MaterialTheme
+import androidx.wear.compose.material.ScalingLazyColumn
 import androidx.wear.compose.material.Text
-import androidx.wear.compose.material.TimeText
-import androidx.wear.tooling.preview.devices.WearDevices
-import com.example.audiobookshelfwatch.R
+import androidx.wear.compose.material.items
 import com.example.audiobookshelfwatch.presentation.theme.AudiobookshelfWatchTheme
+import java.io.File
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
-
         super.onCreate(savedInstanceState)
-
-        setTheme(android.R.style.Theme_DeviceDefault)
-
+        Log.d("WearAppUI", "MainActivity onCreate started.")
         setContent {
-            WearApp("Android")
+            WearApp(context = applicationContext)
         }
+        Log.d("WearAppUI", "MainActivity onCreate finished.")
     }
 }
 
 @Composable
-fun WearApp(greetingName: String) {
+fun WearApp(context: Context) {
+    Log.d("WearAppUI", "WearApp Composable started.")
+    val audiobooks = remember {
+        val filesDir = context.filesDir
+        filesDir.listFiles { file -> file.extension.equals("m4a", ignoreCase = true) } ?: emptyArray()
+    }
+
     AudiobookshelfWatchTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colors.background),
-            contentAlignment = Alignment.Center
-        ) {
-            TimeText()
-            Greeting(greetingName = greetingName)
+        // We don't need a Box here. ScalingLazyColumn will handle the layout.
+        BookList(books = audiobooks.toList())
+    }
+    Log.d("WearAppUI", "WearApp Composable finished.")
+}
+
+@Composable
+fun BookList(books: List<File>) {
+    Log.d("WearAppUI", "BookList Composable started with ${books.size} books.")
+    // ScalingLazyColumn is the correct component for scrollable lists on Wear OS.
+    // It automatically handles circular screen layouts.
+    ScalingLazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colors.background)
+    ) {
+        items(books) { bookFile ->
+            // Use a Column to center the text within each list item.
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    textAlign = TextAlign.Center,
+                    text = bookFile.nameWithoutExtension,
+                    color = MaterialTheme.colors.onBackground
+                )
+            }
         }
     }
-}
-
-@Composable
-fun Greeting(greetingName: String) {
-    Text(
-        modifier = Modifier.fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
-        text = stringResource(R.string.hello_world, greetingName)
-    )
-}
-
-@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
-@Composable
-fun DefaultPreview() {
-    WearApp("Preview Android")
+    Log.d("WearAppUI", "BookList Composable finished.")
 }
